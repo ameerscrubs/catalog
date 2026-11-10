@@ -255,6 +255,10 @@ footer .wrap{padding-block:34px 44px;display:grid;gap:18px;justify-items:center;
   const SWATCH = {"black":"#1d1d1f","dark blue":"#232a4a","dark grey":"#55585e","dark gray":"#55585e","dark steel blue":"#2f5f9e",
     "dark teal":"#2f6f78","dark green":"#1f6b63","emerald green":"#1f6a58","crimson":"#7a1f33","olive":"#77794a",
     "indian red":"#b86f78","purple":"#4b3a6e","white":"#f1f1ef"};
+  // colours hidden from the catalog even if in stock (key: line|gender|sleeve|colour)
+  const HIDE = new Set(["royal||short|crimson"]);
+  // per-line display order (overrides the default order)
+  const LINE_ORDER = {premium:["crimson","emerald green","dark gray","dark steel blue","dark blue","black","olive"]};
   const COLOUR_ORDER = ["black","dark blue","dark grey","dark gray","dark steel blue","dark teal","dark green","emerald green","crimson","olive","indian red","purple","white"];
 
   let stock = {rows:[], updated:""}, imgs = {};
@@ -302,11 +306,13 @@ footer .wrap{padding-block:34px 44px;display:grid;gap:18px;justify-items:center;
 
   function visibleProducts(){
     const L = LINES.find(l => l.id === state.line);
-    return [...products.values()].filter(p => p.line === L.key && total(p) > 0)
+    return [...products.values()].filter(p => p.line === L.key && total(p) > 0 && !HIDE.has([p.line,p.gender,p.sleeve,p.colour].join("|")))
       .filter(p => p.line !== "classic" || (p.gender === state.gender && p.sleeve === state.sleeve))
       .sort((a,b) => {
         const ia = (imgs[[a.line,a.gender,a.sleeve,a.colour].join("|")]||[]).length ? 0 : 1;
         const ib = (imgs[[b.line,b.gender,b.sleeve,b.colour].join("|")]||[]).length ? 0 : 1;
+        const ord = LINE_ORDER[a.line];
+        if (ord) { const oa = ord.indexOf(a.colour), ob = ord.indexOf(b.colour); return (oa < 0 ? 99 : oa) - (ob < 0 ? 99 : ob); }
         return ia - ib || COLOUR_ORDER.indexOf(a.colour) - COLOUR_ORDER.indexOf(b.colour);
       });
   }
